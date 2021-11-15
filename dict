@@ -1,41 +1,29 @@
-import pyexcel
 from openpyxl import load_workbook
-import pandas as pd
-import numpy as np
 import time
 PATH_1 = 'ostatki _ отчёт.XLSX'
 PATH_2 = 'отчет для сверки-2.xlsx'
 SHEET = 'Sheet1'
+COLUMN_WITH_COST_OSTATKI = 11
+COLUMN_WITH_COST_OTCHET = 8
+COLUMN_WITH_MATERIAL_OSTATKI = 4
+COLUMN_WITH_MATERIAL_OTCHET = 7
 
-def read_col(path,sheet,col_num1, *kwargs):
+def read_columns_from_file(path, sheet, col_num1, col_num2):
     book = load_workbook(path)
     sheet_ = book[sheet]
-    material=[]
-    for i in range(2,sheet_.max_row):
-        if sheet_.cell(row=i, column=col_num1).value != '':
-            material.append(int(sheet_.cell(row=i, column=col_num1).value))
-        else:
-            material.append(0)
-    return material
+    cost, material = [], []
+    for i in range(2, sheet_.max_row):
+        cost.append(int(sheet_.cell(row=i, column=col_num1).value))
+        material.append(int(sheet_.cell(row=i, column=col_num2).value))
+    material.append(None), cost.append(None)
+    return cost, material
 
-def create_Dict():
-    cost = read_col(PATH_1,SHEET,11)
-    material = read_col(PATH_1,SHEET,4)
-    #consignment = read_col(PATH_1,SHEET,7)
-    dict_=dict()
+def create_dictionary(path, col_num1, col_num2):
+    cost, material = read_columns_from_file(path, SHEET, col_num1, col_num2)
+    dict_ = dict()
     for i in range(len(cost)):
-        if material[i]==material[i-1] and material[i] != material[i+1]:
-            dict_.update({material[i-1]: cost[i]})
-    return dict_
-
-def create_Dict_2():
-    doc_number = read_col(PATH_2,SHEET,2)
-    cost = read_col(PATH_2,SHEET,8)
-    material = read_col(PATH_2,SHEET,7)
-    dict_=dict()
-    for i in range(len(cost)):
-        if doc_number[i]==0 and cost[i]!=0:
-            dict_.update({material[i-1]: cost[i]})
+        if material[i] == material[i-1] and material[i] != material[i+1] and cost[i] != 0:
+            dict_.update({material[i]: cost[i]})
     return dict_
 
 def dict_compare(d1, d2):
@@ -43,15 +31,12 @@ def dict_compare(d1, d2):
     d2_keys = set(d2.keys())
     shared_keys = d1_keys.intersection(d2_keys)
     shared_keys.symmetric_difference_update(d2_keys)
-    print(shared_keys)
-    #return added, removed, modified, same
-
+    print("В файле "+PATH_1+" нет отчётности о материалах с номерами", shared_keys)
 
 if __name__ == '__main__':
     start_time = time.time()
-    read_col(PATH_2,SHEET,3)
-    # d1 = create_Dict()
-    # d2 = create_Dict_2()
-    # dict_compare(d1,d2)
+    d1 = create_dictionary(PATH_1, COLUMN_WITH_COST_OSTATKI, COLUMN_WITH_MATERIAL_OSTATKI)
+    d2 = create_dictionary(PATH_2, COLUMN_WITH_COST_OTCHET, COLUMN_WITH_MATERIAL_OTCHET)
+    dict_compare(d1, d2)
     print("--- %s seconds ---" % (time.time() - start_time))
 
