@@ -1,0 +1,57 @@
+import pyexcel
+from openpyxl import load_workbook
+import pandas as pd
+import numpy as np
+import time
+PATH_1 = 'ostatki _ отчёт.XLSX'
+PATH_2 = 'отчет для сверки-2.xlsx'
+SHEET = 'Sheet1'
+
+def read_col(path,sheet,col_num1, *kwargs):
+    book = load_workbook(path)
+    sheet_ = book[sheet]
+    material=[]
+    for i in range(2,sheet_.max_row):
+        if sheet_.cell(row=i, column=col_num1).value != '':
+            material.append(int(sheet_.cell(row=i, column=col_num1).value))
+        else:
+            material.append(0)
+    return material
+
+def create_Dict():
+    cost = read_col(PATH_1,SHEET,11)
+    material = read_col(PATH_1,SHEET,4)
+    #consignment = read_col(PATH_1,SHEET,7)
+    dict_=dict()
+    for i in range(len(cost)):
+        if material[i]==material[i-1] and material[i] != material[i+1]:
+            dict_.update({material[i-1]: cost[i]})
+    return dict_
+
+def create_Dict_2():
+    doc_number = read_col(PATH_2,SHEET,2)
+    cost = read_col(PATH_2,SHEET,8)
+    material = read_col(PATH_2,SHEET,7)
+    dict_=dict()
+    for i in range(len(cost)):
+        if doc_number[i]==0 and cost[i]!=0:
+            dict_.update({material[i-1]: cost[i]})
+    return dict_
+
+def dict_compare(d1, d2):
+    d1_keys = set(d1.keys())
+    d2_keys = set(d2.keys())
+    shared_keys = d1_keys.intersection(d2_keys)
+    shared_keys.symmetric_difference_update(d2_keys)
+    print(shared_keys)
+    #return added, removed, modified, same
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+    read_col(PATH_2,SHEET,3)
+    # d1 = create_Dict()
+    # d2 = create_Dict_2()
+    # dict_compare(d1,d2)
+    print("--- %s seconds ---" % (time.time() - start_time))
+
